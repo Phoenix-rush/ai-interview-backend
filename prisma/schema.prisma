@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          String    @default("USER")
+  banned        Boolean  @default(false)
+  createdAt     DateTime  @default(now())
+
+  emailVerified       Boolean  @default(false)
+  verifyToken         String?
+
+  resetToken          String?  
+  resetTokenExpiry    DateTime?
+  
+  // Relation to Resume model
+  resumes       Resume[]
+  interviews    Interview[]
+  stats      UserStats?
+  notifications Notification[]
+}
+
+model Resume {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileUrl     String
+  parsedData  Json?
+  createdAt   DateTime @default(now())
+}
+
+model Interview {
+  id          String              @id @default(uuid())
+  userId      String
+  role        String
+  difficulty  String              // e.g., "Easy", "Medium", "Hard"
+  duration    Int                 // Duration in minutes
+  status      String              @default("PENDING") // PENDING, ACTIVE, COMPLETED
+  createdAt   DateTime            @default(now())
+
+  user        User                @relation(fields: [userId], references: [id])
+  questions   InterviewQuestion[]
+  answers     InterviewAnswer[]
+  codeSubmissions CodeSubmission[]
+  feedback    InterviewFeedback? 
+}
+
+model InterviewQuestion {
+  id          String    @id @default(uuid())
+  interviewId String
+  question    String
+  type        String    // e.g., CONCEPTUAL, CODING, BEHAVIORAL
+  order       Int
+
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model InterviewAnswer {
+  id          String   @id @default(uuid())
+  interviewId String
+  questionId  String
+  transcript  String   @db.Text
+  duration    Int      // Duration in seconds
+  skipped     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  interview   Interview         @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  // Optional relation if you want to link strictly to InterviewQuestion:
+  // question    InterviewQuestion @relation(fields: [questionId], references: [id])
+}
+
+model CodeSubmission {
+  id          String   @id @default(uuid())
+  interviewId String
+  questionId  String
+  code        String   @db.Text // User ka likha hua code
+  language    String   // JavaScript, Python, C++, etc.
+  verdict     String?  // Accepted, Wrong Answer, Compilation Error
+  stdout      String?  @db.Text // Code run hone ke baad ka output
+  stderr      String?  @db.Text // Agar code fat gaya toh error yahan aayega
+  createdAt   DateTime @default(now())
+
+  // Relation: Ye submission kis interview ka hissa hai
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model InterviewFeedback {
+  id           String   @id @default(uuid())
+  interviewId  String   @unique // Ek interview ka sirf ek hi feedback hoga
+  scores       Json     // Communication, Technical, Problem Solving etc. ke alag-alag marks
+  grade        String   // A, B, C, D
+  strengths    String[] // Candidate ki achhi baatein (Array of strings)
+  weaknesses   String[] // Candidate ki kharab baatein
+  suggestions  Json     // Har category ke hisaab se improvement tips
+  modelAnswers Json     // AI ke hisaab se har sawal ka perfect jawab kya hona chahiye tha
+  questions    Json?
+  createdAt    DateTime @default(now())
+
+  // Relation: Ye feedback kis interview ka hai
+  interview    Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model UserStats {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  totalInterviews Int      @default(0)
+  avgScore        Float    @default(0.0)
+  currentStreak   Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  // Relation: Ye stats kis user ke hain
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // e.g., 'WELCOME', 'FEEDBACK_READY', 'STREAK_REMINDER'
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relation: Ye notification kis user ka hai
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  // Optional kyunki failed login (without user) bhi log ho sakta hai
+  action    String   // e.g., "USER_LOGIN", "INTERVIEW_CREATED", "PASSWORD_RESET"
+  resource  String?  // e.g., "Interview-123"
+  ip        String?  // User ka IP address
+  createdAt DateTime @default(now())
+}
