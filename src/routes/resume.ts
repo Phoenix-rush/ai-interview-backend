@@ -2,7 +2,6 @@ import { Router, Response } from 'express';
 import prisma from '../config/prisma';
 import { protect, AuthRequest } from '../middlewares/authMiddleware';
 import { upload } from '../middlewares/uploadMiddleware';
-import { PDFParse } from 'pdf-parse';
 import { geminiModel } from '../config/gemini';
 
 const router = Router();
@@ -39,9 +38,9 @@ router.post('/upload', protect, upload.single('file'), async (req: AuthRequest, 
 
     const buffer = Buffer.from(arrayBuffer);
 
-    // Extract text — pdf-parse v2 (class-based)
-    parser = new PDFParse({ data: buffer });
-    const pdfResult = await parser.getText();
+    // Extract text — pdf-parse standard usage
+    const pdfParse = require('pdf-parse');
+    const pdfResult = await pdfParse(buffer);
     const extractedText = pdfResult.text;
 
     // Send to Gemini for structured parsing
@@ -95,9 +94,7 @@ router.post('/upload', protect, upload.single('file'), async (req: AuthRequest, 
     console.error('Resume processing error:', error);
     return res.status(500).json({ error: 'Error during processing: ' + (error.message || 'Unknown error') });
   } finally {
-    if (parser) {
-      await parser.destroy();
-    }
+    // Standard pdf-parse handles its own cleanup
   }
 });
 
