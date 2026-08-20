@@ -8,8 +8,6 @@ const router = Router();
 
 // POST /api/v1/resume/upload
 router.post('/upload', protect, upload.single('file'), async (req: AuthRequest, res: Response): Promise<any> => {
-  let parser: PDFParse | null = null;
-
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file provided. Please upload a PDF resume.' });
