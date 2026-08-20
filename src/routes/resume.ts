@@ -91,9 +91,9 @@ router.post('/upload', protect, upload.single('file'), async (req: AuthRequest, 
       resume,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Resume processing error:', error);
-    return res.status(500).json({ error: 'Internal server error during resume processing.' });
+    return res.status(500).json({ error: 'Error during processing: ' + (error.message || 'Unknown error') });
   } finally {
     if (parser) {
       await parser.destroy();
