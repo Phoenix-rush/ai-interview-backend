@@ -36,9 +36,10 @@ router.post('/upload', protect, upload.single('file'), async (req: AuthRequest, 
 
     const buffer = Buffer.from(arrayBuffer);
 
-    // Extract text — pdf-parse standard usage
-    const pdfParse = require('pdf-parse');
-    const pdfResult = await pdfParse(buffer);
+    // Extract text — pdf-parse v2 (class-based)
+    const { PDFParse } = require('pdf-parse');
+    const parser = new PDFParse({ data: buffer });
+    const pdfResult = await parser.getText();
     const extractedText = pdfResult.text;
 
     // Send to Gemini for structured parsing
