@@ -1,12 +1,12 @@
 import { Worker, Job } from 'bullmq';
+import IORedis from 'ioredis';
 import prisma from '../config/prisma';
 import { sendEmail } from '../utils/email';
 import { geminiModel } from '../config/gemini';
 
-const connection = {
-  host: process.env.REDIS_HOST || '127.0.0.1',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-};
+const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null
+});
 
 export const feedbackWorker = new Worker('feedback-queue', async (job: Job) => {
   const { interviewId, userId } = job.data;

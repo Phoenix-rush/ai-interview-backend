@@ -1,10 +1,10 @@
 import { Queue } from 'bullmq';
+import IORedis from 'ioredis';
 
-// Redis connection config (jo tune phase 1 me docker pe chalaya tha)
-const connection = {
-  host: process.env.REDIS_HOST || '127.0.0.1',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-};
+// Redis connection config (ab Upstash/Render pe URL use hoga)
+const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null
+});
 
 // Queue create kar rahe hain
 export const feedbackQueue = new Queue('feedback-queue', { connection });
